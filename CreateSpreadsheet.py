@@ -2,6 +2,7 @@ import json
 import gender_guesser.detector as gender
 import numpy as np
 from os import path
+from datetime import datetime
 
 d = gender.Detector()
     
@@ -28,7 +29,7 @@ def write_headers(records, csv_file):
     max_decrees = max([len([e for e in r["events"] if e['Description'].startswith('ORD:DECREE DIVORCE')]) for r in records])
 
     csv_file.write('Use')
-    fields = ['Cause Number', 'Filed Date', 'Case Status', 'Hetero']
+    fields = ['Cause Number', 'Type', 'Filed Date', 'Case Status', 'Hetero']
     for f in fields:
         csv_file.write("," + f)
       
@@ -44,7 +45,7 @@ def write_headers(records, csv_file):
         csv_file.write(',Decree Date' + str(i+1))
         csv_file.write(',Decree' + str(i+1))
         
-    fields = ['Style', 'Court', 'Type', 'Hearing Date']
+    fields = ['Style', 'Court', 'Hearing Date']
     for f in fields:
         csv_file.write("," + f)
 
@@ -94,20 +95,28 @@ def deal_with_parties(r):
     respondent = [x for x in r['parties'] if x['Type'] == "RESPONDENT" and not x['Party - Full/Business'] ]
     petitioner = [x for x in r['parties'] if x['Type'] == "PETITIONER" and not x['Party - Full/Business'] ]
 
+    other_petitioners = []
+    other_respondents = []
     if (len(respondent) > 1):
         res_name = respondent[0]['Party - Person']
         for res in respondent[1:]:
             if res['Party - Person'] == res_name:
+                other_respondents.append(res)
                 respondent.remove(res)
 
     if (len(petitioner) > 1):
         pet_name = petitioner[0]['Party - Person']
         for pet in petitioner[1:]:
             if pet['Party - Person'] == pet_name:
+                other_petitioners.append(pet)
                 petitioner.remove(pet)
+    
+    if (len(petitioner)==2 and len(respondent)==0):
+        respondent.append(petitioner.pop())
       
     
     if not (len(respondent)==1 and len(petitioner)==1):
+        print("**************************************") 
         print(r['Cause Number'] + " Respondents: " + str(len(respondent)) + " Petitioners: " + str(len(petitioner)))
         print("RESPONDENTS:")
         for res in respondent:
@@ -118,6 +127,7 @@ def deal_with_parties(r):
         print("**************************************") 
         print( "")
         print("")
+        return False
  
     r['other_parties'] = [x for x in r['parties'] if x['Type'] not in ["RESPONDENT", "PARITIONER"]]
 
@@ -145,7 +155,7 @@ def deal_with_parties(r):
         else:
             print("UH OH")
             r["Hetero"]="Unknown"
-    
+    return True
 
 
 
@@ -154,10 +164,11 @@ with open ('csv/Records.csv', 'w') as csv_file:
     max_parties, max_decrees = write_headers(records, csv_file)
     for r in records:
  
-        deal_with_parties(r)
+        if not (deal_with_parties(r)):
+            continue
 
         
-        fields = ['Cause Number', 'Filed Date', 'Case Status', 'Hetero']
+        fields = ['Cause Number', 'Type', 'Filed Date', 'Case Status', 'Hetero']
         for f in fields:
             csv_file.write("," + r[f])
         
@@ -166,8 +177,8 @@ with open ('csv/Records.csv', 'w') as csv_file:
             for v in [list(p.values())[x] for x in [6, 5, 4, 1, 0]]:
                 csv_file.write(','+v) 
         
-        
         decrees = [e for e in r["events"] if 'ORD:DECREE DIVORCE' in e['Description']]
+        decrees = sorted(decrees, key=lambda x: datetime.strptime(x["Date"], '%m/%d/%Y').date())
         for e in decrees:
             url = e['&nbsp;']
             url = url.split('"')[1]

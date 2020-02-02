@@ -10,15 +10,26 @@ def get_decrees(driver, df, i, files_to_move):
     if (column_name) not in df.columns:
         return False
     df_d = df[~df[column_name].isna()]
+    print (df_d.shape)
     for _,r in df_d.iterrows():
         decree = r[column_name] 
         cause_num = r["Cause Number"]
         if decree:
-            print("downloaded: " + decree)
-            files_to_move.append(("../Downloads/" + decree.split("=")[1] + ".pdf", "decrees/" + cause_num + "_" + str(i) + ".pdf"))
- #           downloaded_files.append("../Downloads/" + decree.split("=")[1] + ".pdf")
-            driver.get(decree) 
-            time.sleep(2)
+ #           print("downloaded: " + decree)
+            source = "../Downloads/" + decree.split("=")[1] + ".pdf"
+            dest = "decrees/" + cause_num + "_" + str(i) + ".pdf"
+            files_to_move.append((source, dest))
+            if os.path.exists(source):
+                print("Already Downloaded: " + cause_num)
+                files_to_move.append((source, dest))
+            elif os.path.exists(dest):
+                print("Already Moved:" + cause_num)
+            else:
+                print("Downloading: " + cause_num)
+                driver.get(decree) 
+                files_to_move.append((source, dest))           
+                time.sleep(2)
+            
     return True
 
 

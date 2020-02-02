@@ -34,7 +34,7 @@ def parse_table(table_class):
 def get_records_for_year(driver, year, start_record=1):
     i = start_record
     not_found_count = 0
-    while (not_found_count < 2):
+    while (not_found_count < 50):
 
         record_num = str(i).rjust(6, "0")
         jfile = 'json' + str(year) + '/'+record_num+'.json'

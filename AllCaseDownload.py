@@ -55,7 +55,7 @@ def get_records_for_year(driver, year, start_record=1):
                 json.dump({}, fp)
 
         else:
-            not_found_count == 0
+            not_found_count = 0
             details = driver.find_element_by_id("detailsSummary").get_attribute('innerHTML')
             summary_dict = {"record_num":record_num}
             for dt in details.split("<dt>")[1:]:
@@ -73,4 +73,4 @@ def get_records_for_year(driver, year, start_record=1):
     driver.close() 
 
 driver=log_in()
-get_records_for_year(driver, 17, 6000)
+get_records_for_year(driver, 19)

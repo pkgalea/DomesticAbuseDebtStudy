@@ -16,8 +16,13 @@ def get_records():
                 with open(filename) as json_file:
                     data = json.load(json_file)
                     if (len(data)>0):
-                        if "DIVORCE" in data["Type"] and data["Case Status"]=="CLOSED":
-                            records.append(data)
+                        if "DIVORCE" in data["Type"]:  #and data["Case Status"]=="CLOSED":
+                            decrees = get_decrees(data["events"])
+                            if (decrees):
+                                first_decree_date = decrees[0]["Date"]
+                                date_parts = first_decree_date.split("/")
+                                if date_parts[0]=="1" and date_parts[2]=="2020":
+                                    records.append(data)
     return records
 
 def convert_date(d):
@@ -161,9 +166,12 @@ def write_parties(parties):
         for v in [list(p.values())[x] for x in [6, 5, 4, 1, 0]]:
             csv_file.write(','+v) 
 
-def write_decrees(events):
+def get_decrees(events):
     decrees = [e for e in events if 'ORD:DECREE DIVORCE' in e['Description']]
     decrees = sorted(decrees, key=lambda x: datetime.strptime(x["Date"], '%m/%d/%Y').date())
+    return decrees
+
+def write_decrees(decrees):
     for e in decrees:
         url = e['&nbsp;']
         url = url.split('"')[1]
@@ -190,7 +198,7 @@ with open ('csv/Records.csv', 'w') as csv_file:
       
         write_parties(r['resp_and_part'])
         
-        write_decrees(r['events'])
+        write_decrees(get_decrees(r['events']))
          
         fields = ['Style', 'Court', 'Hearing Date']
         write_fields(fields)
